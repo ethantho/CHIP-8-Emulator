@@ -2,6 +2,10 @@
 
 #include <string>
 #include <stack>
+#include <fstream>
+#include <iostream>
+#include <filesystem>
+#include <vector>
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
@@ -12,7 +16,7 @@ public:
 
 	Emulator(){}
 
-	void GameLoop();
+	void GameLoop(std::string& program_file_name);
 
 private:
 
@@ -22,7 +26,7 @@ private:
 	const int WINDOW_WIDTH = 640;
 	const int WINDOW_HEIGHT = 320;
 
-	const int CYCLES_PER_FRAME = 12;
+	const int CYCLES_PER_FRAME = 1;
 
 	SDL_Window* window = nullptr;
 	SDL_Surface* surface = nullptr;
@@ -30,7 +34,7 @@ private:
 
 	bool quit = false;
 
-	void Init();
+	void Init(std::string& program_file_name);
 	void Update();
 	void Input();
 	void Render();
@@ -39,12 +43,14 @@ private:
 	void Decode();
 	void Execute();
 
+	void LoadProgram(std::string& program_file_name);
+
 	const int MEMORY_SIZE = 4096;
 	unsigned char memory[4096];
 
 	bool pixels[64][32];
 
-	int program_counter = 0;
+	int program_counter = 0x200;
 
 	uint16_t index_register = 0;
 

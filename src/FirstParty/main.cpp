@@ -9,7 +9,9 @@ int main(int argc, char* argv[])
 
     Emulator e;
 
-    e.GameLoop();
+    std::string program_file_name = argv[1];
+
+    e.GameLoop(program_file_name);
 
     return 0;
 }

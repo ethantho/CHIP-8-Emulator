@@ -1,9 +1,9 @@
 #include "Emulator.h"
 
 
-void Emulator::GameLoop()
+void Emulator::GameLoop(std::string& program_file_name)
 {
-	Init();
+	Init(program_file_name);
 
     while (!quit) {
 
@@ -15,7 +15,7 @@ void Emulator::GameLoop()
     }
 }
 
-void Emulator::Init()
+void Emulator::Init(std::string& program_file_name)
 {
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
@@ -45,6 +45,8 @@ void Emulator::Init()
     for (int i = 0; i < MEMORY_SIZE; ++i) {
         memory[i] = 0x00;
     }
+
+    LoadProgram(program_file_name);
 
     //initialize display
     for (int i = 0; i < LOGICAL_WIDTH; ++i) {
@@ -156,6 +158,15 @@ void Emulator::Input()
 
 void Emulator::Render()
 {
+    for (int x = 0; x < LOGICAL_WIDTH; ++x) {
+        for (int y = 0; y < LOGICAL_HEIGHT; ++y) {
+            if (pixels[x][y]) {
+                int i = SDL_RenderDrawPoint(renderer, x, y);
+            }
+        }
+    }
+
+    SDL_RenderPresent(renderer);
 }
 
 void Emulator::Fetch()
@@ -174,9 +185,9 @@ void Emulator::Fetch()
 
 void Emulator::Decode()
 {
-    unsigned char first_nibble = (instruction & 0xF000) >> 24;
-    unsigned char X = (instruction & 0x0F00) >> 16;
-    unsigned char Y = (instruction & 0x00F0) >> 8;
+    unsigned char first_nibble = (instruction & 0xF000) >> 12;
+    unsigned char X = (instruction & 0x0F00) >> 8;
+    unsigned char Y = (instruction & 0x00F0) >> 4;
     unsigned char N = instruction & 0x000F;
 
     unsigned char NN = instruction & 0x00FF;
@@ -238,7 +249,7 @@ void Emulator::Decode()
 
             for (int bit = 0; bit < 8; ++bit) {
 
-                bool check = (current_byte >> bit) & 1;
+                bool check = (current_byte >> (7 - bit)) & 1;
 
                 if (check && pixels[x_coord + bit][y_coord + row]) {
 
@@ -275,4 +286,21 @@ void Emulator::Decode()
 
 void Emulator::Execute()
 {
+}
+
+void Emulator::LoadProgram(std::string& program_file_name)
+{
+    std::ifstream program_file(program_file_name, std::fstream::binary);
+
+    if (!program_file.is_open()) {
+        std::cerr << "Error opening " << program_file_name << std::endl;
+        exit(1);
+    }
+
+    
+    uintmax_t file_length{ std::filesystem::file_size(program_file_name) };
+    //std::vector<unsigned char> holder(file_length);
+
+    program_file.read(reinterpret_cast<char*>(memory + 0x200), file_length);
+
 }

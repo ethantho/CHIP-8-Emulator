@@ -6,6 +6,7 @@
 #include <iostream>
 #include <filesystem>
 #include <vector>
+#include <cstdlib>
 
 #define SDL_MAIN_HANDLED
 #include "SDL.h"
@@ -26,7 +27,13 @@ private:
 	const int WINDOW_WIDTH = 640;
 	const int WINDOW_HEIGHT = 320;
 
-	const int CYCLES_PER_FRAME = 1;
+	const int CYCLES_PER_FRAME = 12;
+
+	const bool SHIFT_OPTIONAL_STEP = true;
+	const bool JUMP_WITH_OFFSET_NEW = false;
+	const bool ADD_INDEX_OVERFLOW = false;
+
+	const uint8_t FONT_START = 0x050;
 
 	SDL_Window* window = nullptr;
 	SDL_Surface* surface = nullptr;

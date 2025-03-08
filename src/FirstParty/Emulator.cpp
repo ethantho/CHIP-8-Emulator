@@ -37,10 +37,6 @@ void Emulator::Init(std::string& program_file_name)
 
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
 
-    //int i = SDL_RenderDrawPoint(renderer, LOGICAL_WIDTH/2, LOGICAL_HEIGHT/2);
-
-    //SDL_RenderPresent(renderer);
-
     //initialize memory
     for (int i = 0; i < MEMORY_SIZE; ++i) {
         memory[i] = 0x00;
@@ -60,12 +56,8 @@ void Emulator::Init(std::string& program_file_name)
 
     //load fonts at 050–09F
     for (int i = 0; i < 80; ++i) {
-        memory[i + 0x050] = font_data[i];
+        memory[i + FONT_START] = font_data[i];
     }
-
-    //initialize input
-    
-
 
 }
 
@@ -202,21 +194,35 @@ void Emulator::Decode()
             for (int i = 0; i < LOGICAL_WIDTH; ++i) { for (int j = 0; j < LOGICAL_HEIGHT; ++j) { pixels[i][j] = false; } }
             break;
         }
-        break;
-    case 0x1:
-        if (NNN == 0x111) {
-            //jump
-            program_counter = NNN;
-            break;
+        if (NNN == 0x0EE) {
+            //return after subroutine
+            program_counter = stack.top();
+            stack.pop();
         }
         break;
+    case 0x1:
+        program_counter = NNN;
+        break;
     case 0x2:
+        //subroutine
+        stack.push(program_counter);
+        program_counter = NNN;
         break;
     case 0x3:
+        //skip if value in VX is equal to NN
+        if (variable_registers[X] == NN) {
+            program_counter += 2;
+        }
         break;
     case 0x4:
+        if (variable_registers[X] != NN) {
+            program_counter += 2;
+        }
         break;
     case 0x5:
+        if (variable_registers[X] == variable_registers[Y]) {
+            program_counter += 2;
+        }
         break;
     case 0x6:
         //set
@@ -227,16 +233,77 @@ void Emulator::Decode()
         variable_registers[X] += NN;
         break;
     case 0x8:
+        switch (N) {
+        case 0:
+            variable_registers[X] = variable_registers[Y];
+            break;
+        case 1:
+            variable_registers[X] = variable_registers[X] | variable_registers[Y];
+            break;
+        case 2:
+            variable_registers[X] = variable_registers[X] & variable_registers[Y];
+            break;
+        case 3:
+            variable_registers[X] = variable_registers[X] ^ variable_registers[Y];
+            break;
+        case 4: {
+            int overflow_check = static_cast<int>(variable_registers[X]) + static_cast<int>(variable_registers[Y]);
+            
+            variable_registers[X] = variable_registers[X] + variable_registers[Y];
+
+            variable_registers[0xf] = 0;
+            if (overflow_check > 255) {
+                variable_registers[0xf] = 1;
+            }
+            break;
+        }
+        case 5: {
+            bool check = variable_registers[X] < variable_registers[Y];
+            variable_registers[X] = variable_registers[X] - variable_registers[Y];
+            variable_registers[0xf] = 1;
+            if (check) variable_registers[0xf] = 0;
+            break;
+        }
+        case 6: {
+            if (SHIFT_OPTIONAL_STEP) variable_registers[X] = variable_registers[Y];
+            int flag = variable_registers[X] & 0x1;
+            variable_registers[X] = variable_registers[X] >> 1;
+            variable_registers[0xf] = flag;
+            break;
+        }
+        case 7: {
+            bool check = variable_registers[X] > variable_registers[Y];
+            variable_registers[X] = variable_registers[Y] - variable_registers[X];
+            variable_registers[0xf] = 1;
+            if (check) variable_registers[0xf] = 0;
+            break;
+        }
+        case 0xe: {
+            if (SHIFT_OPTIONAL_STEP) variable_registers[X] = variable_registers[Y];
+            int flag = (variable_registers[X] & 0b10000000) >> 7;
+            variable_registers[X] = variable_registers[X] << 1;
+            variable_registers[0xf] = flag;
+            break;
+        }  
+        }
         break;
     case 0x9:
+        if (variable_registers[X] != variable_registers[Y]) {
+            program_counter += 2;
+        }
         break;
     case 0xa:
         //set index
         index_register = NNN;
         break;
     case 0xb:
+        //jump with offset
+        if(!JUMP_WITH_OFFSET_NEW) program_counter = NNN + variable_registers[0];
+        else { program_counter = NNN + variable_registers[X]; }
         break;
     case 0xc:
+        //random
+        variable_registers[X] = rand() & NN;
         break;
     case 0xd: {
         //display
@@ -274,9 +341,73 @@ void Emulator::Decode()
         break;
     }
     case 0xe:
+        if (NN == 0x9E) {
+            if (keys[X]) program_counter += 2;
+            break;
+        }
+        if (NN == 0xA1) {
+            if (!keys[X]) program_counter += 2;
+            break;
+        }
         break;
     case 0xf:
-        break;
+        switch (NN) {
+        case 0x07:
+            variable_registers[X] = delay_timer;
+            break;
+        case 0x15:
+            delay_timer = variable_registers[X];
+            break;
+        case 0x18:
+            sound_timer = variable_registers[X];
+            break;
+        case 0x1e:
+            //add index
+            if (ADD_INDEX_OVERFLOW && static_cast<int>(index_register) + static_cast<int>(variable_registers[X]) > 0xfff) variable_registers[0xf] = 1;
+            index_register += variable_registers[X];
+            break;
+        case 0x0A: {
+            //wait for key
+            bool pressed = false;
+            for (uint8_t i = 0; i < 16; ++i) {
+                if (keys[i]) {
+                    pressed = true;
+                    variable_registers[X] = i;
+                }
+            }
+            if (!pressed) program_counter -= 2;
+            break;
+        }
+        case 0x29:
+            //font character
+            index_register = FONT_START + (variable_registers[X] * 5);
+            break;
+        case 0x33: {
+            uint8_t num = variable_registers[X];
+            uint8_t digit_3 = num % 10;
+            num /= 10;
+            uint8_t digit_2 = num % 10;
+            num /= 10;
+            uint8_t digit_1 = num % 10;
+            memory[index_register] = digit_1;
+            memory[index_register + 1] = digit_2;
+            memory[index_register + 2] = digit_3;
+            break;
+        }
+        case 0x55:
+            //store memory
+            for (int i = 0; i <= X; ++i) {
+                memory[index_register + i] = variable_registers[i];
+            }
+            break;
+        case 0x65:
+            //load memory
+            for (int i = 0; i <= X; ++i) {
+                variable_registers[i] = memory[index_register + i];
+            }
+            break;
+        }
+    
 
     }
 
@@ -290,6 +421,8 @@ void Emulator::Execute()
 
 void Emulator::LoadProgram(std::string& program_file_name)
 {
+    std::cout << "Loading " << program_file_name << std::endl;
+
     std::ifstream program_file(program_file_name, std::fstream::binary);
 
     if (!program_file.is_open()) {

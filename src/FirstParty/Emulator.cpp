@@ -77,9 +77,9 @@ void Emulator::Update()
 void Emulator::Input()
 {
 
-    for (int i = 0; i < 16; ++i) {
+    /*for (int i = 0; i < 16; ++i) {
         keys[i] = false;
-    }
+    }*/
 
     SDL_Event e;
     while (SDL_PollEvent(&e))
@@ -91,65 +91,67 @@ void Emulator::Input()
             quit = true;
         }
 
-        if (e.type == SDL_KEYDOWN) {
-            switch (e.key.keysym.scancode) {
-            case SDL_SCANCODE_1:
-                keys[0] = true;
-                break;
-            case SDL_SCANCODE_2:
-                keys[1] = true;
-                break;
-            case SDL_SCANCODE_3:
-                keys[2] = true;
-                break;
-            case SDL_SCANCODE_4:
-                keys[3] = true;
-                break;
-            case SDL_SCANCODE_Q:
-                keys[4] = true;
-                break;
-            case SDL_SCANCODE_W:
-                keys[5] = true;
-                break;
-            case SDL_SCANCODE_E:
-                keys[6] = true;
-                break;
-            case SDL_SCANCODE_R:
-                keys[7] = true;
-                break;
-            case SDL_SCANCODE_A:
-                keys[8] = true;
-                break;
-            case SDL_SCANCODE_S:
-                keys[9] = true;
-                break;
-            case SDL_SCANCODE_D:
-                keys[10] = true;
-                break;
-            case SDL_SCANCODE_F:
-                keys[11] = true;
-                break;
-            case SDL_SCANCODE_Z:
-                keys[12] = true;
-                break;
-            case SDL_SCANCODE_X:
-                keys[13] = true;
-                break;
-            case SDL_SCANCODE_C:
-                keys[14] = true;
-                break;
-            case SDL_SCANCODE_V:
-                keys[15] = true;
-                break;
-            }
-
+        switch (e.key.keysym.scancode) {
+        case SDL_SCANCODE_1:
+            keys[0] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_2:
+            keys[1] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_3:
+            keys[2] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_4:
+            keys[3] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_Q:
+            keys[4] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_W:
+            keys[5] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_E:
+            keys[6] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_R:
+            keys[7] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_A:
+            keys[8] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_S:
+            keys[9] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_D:
+            keys[10] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_F:
+            keys[11] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_Z:
+            keys[12] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_X:
+            keys[13] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_C:
+            keys[14] = e.type == SDL_KEYDOWN;
+            break;
+        case SDL_SCANCODE_V:
+            keys[15] = e.type == SDL_KEYDOWN;
+            break;
         }
+        
     }
 
 }
 
 void Emulator::Render()
 {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+
     for (int x = 0; x < LOGICAL_WIDTH; ++x) {
         for (int y = 0; y < LOGICAL_HEIGHT; ++y) {
             if (pixels[x][y]) {
@@ -342,11 +344,11 @@ void Emulator::Decode()
     }
     case 0xe:
         if (NN == 0x9E) {
-            if (keys[X]) program_counter += 2;
+            if (keys[variable_registers[X]]) program_counter += 2;
             break;
         }
         if (NN == 0xA1) {
-            if (!keys[X]) program_counter += 2;
+            if (!keys[variable_registers[X]]) program_counter += 2;
             break;
         }
         break;

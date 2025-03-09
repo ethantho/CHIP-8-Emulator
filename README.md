@@ -16,17 +16,16 @@ This is a simple CHIP-8 emulator I developed as a first step towards developing 
 <!-- ### Installing
 
 * How/where to download your program
-* Any modifications needed to be made to files/folders
+* Any modifications needed to be made to files/folders -->
 
 ### Executing program
-
-* How to run the program
-* Step-by-step bullets
 ```
-code blocks for commands
+CHIP8.exe <ROM FILE NAME>
 ```
 
-## Help
+* Or alternatively, drag a ROM onto the executable file.
+
+<!-- ## Help
 
 Any advise for common problems or issues.
 ```

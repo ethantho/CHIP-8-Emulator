@@ -27,7 +27,7 @@ private:
 	const int WINDOW_WIDTH = 640;
 	const int WINDOW_HEIGHT = 320;
 
-	const int CYCLES_PER_FRAME = 120;
+	const int CYCLES_PER_FRAME = 500;
 
 	const bool SHIFT_OPTIONAL_STEP = true;
 	const bool JUMP_WITH_OFFSET_NEW = false;
